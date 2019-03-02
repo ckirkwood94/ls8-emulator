@@ -20,7 +20,7 @@
 unsigned int loaded_ram_address = 0;
 
 ////////////////////
-// Helper Functions
+// CPU Helper Functions
 ////////////////////
 
 // Return value at RAM address
@@ -100,18 +100,8 @@ void handle_interrupt(struct cpu *cpu, int interrupt_flag)
   // return to cpu_run
 }
 
-void handle_IRET(struct cpu *cpu, int interrupt_flag)
-{
-  for (int i = 6; i >= 0; i--)
-  {
-    cpu->reg[i] = pop(cpu);
-  }
-  // cpu->FL = pop(cpu);
-  cpu->PC = pop(cpu);
-  interrupt_flag = 0;
-}
 ///////////////////////
-// Helper Functions End
+// CPU Helper Functions End
 ///////////////////////
 
 /**
@@ -237,6 +227,33 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   }
 }
 
+//////////////////////////
+// Handle IR Funcs Start
+//////////////////////////
+// Functions that all return void and implement individual instructions
+void handle_ADD(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{ // *This is an instruction handled by the ALU.*
+  alu(cpu, ALU_ADD, operandA, operandB);
+}
+void handle_AND(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{ // *This is an instruction handled by the ALU.*
+  alu(cpu, ALU_AND, operandA, operandB);
+}
+void handle_IRET(struct cpu *cpu, int interrupt_flag)
+{
+  for (int i = 6; i >= 0; i--)
+  {
+    cpu->reg[i] = pop(cpu);
+  }
+  // cpu->FL = pop(cpu);
+  cpu->PC = pop(cpu);
+  interrupt_flag = 0;
+}
+
+//////////////////////////
+// Handle IR Funcs End
+//////////////////////////
+
 /**
  * Run the CPU
  */
@@ -276,12 +293,10 @@ void cpu_run(struct cpu *cpu)
     switch (instruction)
     {
     case ADD:
-      // *This is an instruction handled by the ALU.*
-      alu(cpu, ALU_ADD, operandA, operandB);
+      handle_ADD(cpu, operandA, operandB);
       break;
     case AND:
-      // *This is an instruction handled by the ALU.*
-      alu(cpu, ALU_AND, operandA, operandB);
+      handle_AND(cpu, operandA, operandB);
       break;
     case CALL:
       // Calls a subroutine (function) at the address stored in the register.
