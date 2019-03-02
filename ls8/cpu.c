@@ -239,6 +239,39 @@ void handle_AND(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 { // *This is an instruction handled by the ALU.*
   alu(cpu, ALU_AND, operandA, operandB);
 }
+void handle_CALL(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{ // Calls a subroutine (function) at the address stored in the register.
+  // 1. Store address of next instruction after CALL on stack
+  push(cpu, (cpu->PC + 2));
+  // 2. PC is set to address stored in given register
+  cpu->PC = cpu->reg[operandA];
+}
+void handle_CMP(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{ // *This is an instruction handled by the ALU.*
+  alu(cpu, ALU_CMP, operandA, operandB);
+}
+void handle_DEC(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{ // *This is an instruction handled by the ALU.*
+  alu(cpu, ALU_DEC, operandA, operandB);
+}
+void handle_DIV(struct cpu *cpu, unsigned char operandA, unsigned char operandB, int running)
+{ // *This is an instruction handled by the ALU.*
+  // If the value in the second register is 0, the system should print an error message and halt.
+  if (cpu->reg[operandB] == 0)
+  {
+    printf("Can not divide by 0\n");
+    running = 0;
+  }
+  else
+  {
+    alu(cpu, ALU_DIV, operandA, operandB);
+  }
+}
+void handle_HLT(int running) { running = 0; }
+void handle_INC(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{ // *This is an instruction handled by the ALU.*
+  alu(cpu, ALU_DEC, operandA, operandB);
+}
 void handle_IRET(struct cpu *cpu, int interrupt_flag)
 {
   for (int i = 6; i >= 0; i--)
@@ -299,40 +332,22 @@ void cpu_run(struct cpu *cpu)
       handle_AND(cpu, operandA, operandB);
       break;
     case CALL:
-      // Calls a subroutine (function) at the address stored in the register.
-      // 1. Store address of next instruction after CALL on stack
-      push(cpu, (cpu->PC + num_operands + 1));
-      // 2. PC is set to address stored in given register
-      cpu->PC = cpu->reg[operandA];
+      handle_CALL(cpu, operandA, operandB);
       break;
     case CMP:
-      // *This is an instruction handled by the ALU.*
-      alu(cpu, ALU_CMP, operandA, operandB);
+      handle_CMP(cpu, operandA, operandB);
       break;
     case DEC:
-      // *This is an instruction handled by the ALU.*
-      alu(cpu, ALU_DEC, operandA, operandB);
+      handle_DEC(cpu, operandA, operandB);
       break;
     case DIV:
-      // *This is an instruction handled by the ALU.*
-      // If the value in the second register is 0, the system should print an error message and halt.
-      if (cpu->reg[operandB] == 0)
-      {
-        printf("Can not divide by 0\n");
-        running = 0;
-      }
-      else
-      {
-        alu(cpu, ALU_DIV, operandA, operandB);
-      }
+      handle_DIV(cpu, operandA, operandB, running);
       break;
     case HLT:
-      // Halt the CPU (and exit the emulator).
-      running = 0;
+      handle_HLT(running);
       break;
     case INC:
-      // *This is an instruction handled by the ALU.*
-      alu(cpu, ALU_INC, operandA, operandB);
+      handle_INC(cpu, operandA, operandB);
       break;
     case INT:
       // Issue the interrupt number stored in the given register.
