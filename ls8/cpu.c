@@ -347,7 +347,77 @@ void handle_JLT(struct cpu *cpu, unsigned char operandA)
     cpu->PC += 2;
   }
 }
-void handle_JMP() {}
+void handle_JMP(struct cpu *cpu, unsigned char operandA)
+{ // Jump to the address stored in the given register.
+  // Set the `PC` to the address stored in the given register.
+  cpu->PC = cpu->reg[operandA];
+}
+void handle_JNE(struct cpu *cpu, unsigned char operandA)
+{ // If `E` flag is clear (false, 0), jump to the address stored in the given register.
+  // Bitwise & last bit. If not set then jump.
+  if ((cpu->FL & EQUAL) == 0)
+  {
+    cpu->PC = cpu->reg[operandA];
+  }
+  // Else manually increment PC if it isn't set
+  else
+  {
+    cpu->PC += 2;
+  }
+}
+void handle_LD(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  // Loads registerA with the value at the memory address stored in registerB.
+  cpu->reg[operandA] = cpu_ram_read(cpu, cpu->reg[operandB]);
+}
+void handle_LDI(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_MOD(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_MUL(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_NOP(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_NOT(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_OR(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_POP(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_PRA(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_PRN(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_PUSH(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_RET(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_SHL(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_SHR(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_ST(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_SUB(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
+void handle_XOR(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+}
 
 //////////////////////////
 // Handle IR Funcs End
@@ -437,26 +507,13 @@ void cpu_run(struct cpu *cpu)
       handle_JLT(cpu, operandA);
       break;
     case JMP:
-      // Jump to the address stored in the given register.
-      // Set the `PC` to the address stored in the given register.
-      cpu->PC = cpu->reg[operandA];
+      handle_JMP(cpu, operandA);
       break;
     case JNE:
-      //If `E` flag is clear (false, 0), jump to the address stored in the given register.
-      // Bitwise & last bit. If not set then jump.
-      if ((cpu->FL & EQUAL) == 0)
-      {
-        cpu->PC = cpu->reg[operandA];
-      }
-      // Else manually increment PC if it isn't set
-      else
-      {
-        cpu->PC += num_operands + 1;
-      }
+      handle_JNE(cpu, operandA);
       break;
     case LD:
-      // Loads registerA with the value at the memory address stored in registerB.
-      cpu->reg[operandA] = cpu_ram_read(cpu, cpu->reg[operandB]);
+      handle_LD(cpu, operandA, operandB);
       break;
     case LDI:
       // Set the value of a register to an integer.
