@@ -287,6 +287,66 @@ void handle_IRET(struct cpu *cpu, int interrupt_flag)
   cpu->PC = pop(cpu);
   interrupt_flag = 0;
 }
+void handle_JEQ(struct cpu *cpu, unsigned char operandA)
+{ // If `equal` flag is set (true), jump to the address stored in the given register.
+  if (cpu->FL & EQUAL)
+  {
+    cpu->PC = cpu->reg[operandA];
+  }
+  // Else manually increment PC if it isn't set
+  else
+  {
+    cpu->PC += 2;
+  }
+}
+void handle_JGE(struct cpu *cpu, unsigned char operandA)
+{ // If `greater-than` flag or `equal` flag is set (true), jump to the address stored in the given register.
+  if (cpu->FL & (GREATER | EQUAL))
+  {
+    cpu->PC = cpu->reg[operandA];
+  }
+  // Else manually increment PC if it isn't set
+  else
+  {
+    cpu->PC += 2;
+  }
+}
+void handle_JGT(struct cpu *cpu, unsigned char operandA)
+{ // If `greater-than` flag is set (true), jump to the address stored in the given register.
+  if (cpu->FL & GREATER)
+  {
+    cpu->PC = cpu->reg[operandA];
+  }
+  // Else manually increment PC if it isn't set
+  else
+  {
+    cpu->PC += 2;
+  }
+}
+void handle_JLE(struct cpu *cpu, unsigned char operandA)
+{ // If `less-than` flag or `equal` flag is set (true), jump to the address stored in the given register.
+  if (cpu->FL & (LESS | EQUAL))
+  {
+    cpu->PC = cpu->reg[operandA];
+  }
+  // Else manually increment PC if it isn't set
+  else
+  {
+    cpu->PC += 2;
+  }
+}
+void handle_JLT(struct cpu *cpu, unsigned char operandA)
+{ // If `less-than` flag is set (true), jump to the address stored in the given register.
+  if (cpu->FL & LESS)
+  {
+    cpu->PC = cpu->reg[operandA];
+  }
+  // Else manually increment PC if it isn't set
+  else
+  {
+    cpu->PC += 2;
+  }
+}
 
 //////////////////////////
 // Handle IR Funcs End
@@ -361,64 +421,19 @@ void cpu_run(struct cpu *cpu)
       handle_IRET(cpu, interrupt_flag);
       break;
     case JEQ:
-      // If `equal` flag is set (true), jump to the address stored in the given register.
-      if (cpu->FL & EQUAL)
-      {
-        cpu->PC = cpu->reg[operandA];
-      }
-      // Else manually increment PC if it isn't set
-      else
-      {
-        cpu->PC += num_operands + 1;
-      }
+      handle_JEQ(cpu, operandA);
       break;
     case JGE:
-      // If `greater-than` flag or `equal` flag is set (true), jump to the address stored in the given register.
-      if (cpu->FL & (GREATER | EQUAL))
-      {
-        cpu->PC = cpu->reg[operandA];
-      }
-      // Else manually increment PC if it isn't set
-      else
-      {
-        cpu->PC += num_operands + 1;
-      }
+      handle_JGE(cpu, operandA);
       break;
     case JGT:
-      // If `greater-than` flag is set (true), jump to the address stored in the given register.
-      if (cpu->FL & GREATER)
-      {
-        cpu->PC = cpu->reg[operandA];
-      }
-      // Else manually increment PC if it isn't set
-      else
-      {
-        cpu->PC += num_operands + 1;
-      }
+      handle_JGT(cpu, operandA);
       break;
     case JLE:
-      // If `less-than` flag or `equal` flag is set (true), jump to the address stored in the given register.
-      if (cpu->FL & (LESS | EQUAL))
-      {
-        cpu->PC = cpu->reg[operandA];
-      }
-      // Else manually increment PC if it isn't set
-      else
-      {
-        cpu->PC += num_operands + 1;
-      }
+      handle_JLE(cpu, operandA);
       break;
     case JLT:
-      // If `less-than` flag is set (true), jump to the address stored in the given register.
-      if (cpu->FL & LESS)
-      {
-        cpu->PC = cpu->reg[operandA];
-      }
-      // Else manually increment PC if it isn't set
-      else
-      {
-        cpu->PC += num_operands + 1;
-      }
+      handle_JLT(cpu, operandA);
       break;
     case JMP:
       // Jump to the address stored in the given register.
