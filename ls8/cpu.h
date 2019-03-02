@@ -12,6 +12,9 @@ struct cpu
   unsigned char ram[256];
   // Flags 00000LGE
   unsigned char FL;
+  // CPU running flag
+  // TODO: move onto flags register
+  int running;
 };
 
 // ALU operations

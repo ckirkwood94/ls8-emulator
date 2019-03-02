@@ -239,7 +239,7 @@ void handle_AND(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 { // *This is an instruction handled by the ALU.*
   alu(cpu, ALU_AND, operandA, operandB);
 }
-void handle_CALL(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+void handle_CALL(struct cpu *cpu, unsigned char operandA)
 { // Calls a subroutine (function) at the address stored in the register.
   // 1. Store address of next instruction after CALL on stack
   push(cpu, (cpu->PC + 2));
@@ -254,23 +254,28 @@ void handle_DEC(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 { // *This is an instruction handled by the ALU.*
   alu(cpu, ALU_DEC, operandA, operandB);
 }
-void handle_DIV(struct cpu *cpu, unsigned char operandA, unsigned char operandB, int running)
+void handle_DIV(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 { // *This is an instruction handled by the ALU.*
   // If the value in the second register is 0, the system should print an error message and halt.
   if (cpu->reg[operandB] == 0)
   {
     printf("Can not divide by 0\n");
-    running = 0;
+    cpu->running = 0;
   }
   else
   {
     alu(cpu, ALU_DIV, operandA, operandB);
   }
 }
-void handle_HLT(int running) { running = 0; }
+void handle_HLT(struct cpu *cpu) { cpu->running = 0; }
 void handle_INC(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 { // *This is an instruction handled by the ALU.*
-  alu(cpu, ALU_DEC, operandA, operandB);
+  alu(cpu, ALU_INC, operandA, operandB);
+}
+void handle_INT(struct cpu *cpu, unsigned char operandA)
+{ // Issue the interrupt number stored in the given register.
+  // This will set the _n_th bit in the `IS` register to the value in the given register.
+  cpu->reg[IS_REG] |= cpu->reg[operandA];
 }
 void handle_IRET(struct cpu *cpu, int interrupt_flag)
 {
@@ -292,7 +297,7 @@ void handle_IRET(struct cpu *cpu, int interrupt_flag)
  */
 void cpu_run(struct cpu *cpu)
 {
-  int running = 1; // True until we get a HLT instruction
+  cpu->running = 1; // True until we get a HLT instruction
   unsigned char operandA;
   unsigned char operandB;
   struct timeval tv;
@@ -300,7 +305,7 @@ void cpu_run(struct cpu *cpu)
   unsigned int prev_sec = tv.tv_sec;
   int interrupt_flag = 0;
 
-  while (running)
+  while (cpu->running)
   {
     // 1. Get the value of the current instruction (in address PC). Store in Instruction Register or IR
     unsigned char instruction = cpu_ram_read(cpu, cpu->PC);
@@ -332,7 +337,7 @@ void cpu_run(struct cpu *cpu)
       handle_AND(cpu, operandA, operandB);
       break;
     case CALL:
-      handle_CALL(cpu, operandA, operandB);
+      handle_CALL(cpu, operandA);
       break;
     case CMP:
       handle_CMP(cpu, operandA, operandB);
@@ -341,21 +346,18 @@ void cpu_run(struct cpu *cpu)
       handle_DEC(cpu, operandA, operandB);
       break;
     case DIV:
-      handle_DIV(cpu, operandA, operandB, running);
+      handle_DIV(cpu, operandA, operandB);
       break;
     case HLT:
-      handle_HLT(running);
+      handle_HLT(cpu);
       break;
     case INC:
       handle_INC(cpu, operandA, operandB);
       break;
     case INT:
-      // Issue the interrupt number stored in the given register.
-      // This will set the _n_th bit in the `IS` register to the value in the given register.
-      cpu->reg[IS_REG] |= cpu->reg[operandA];
+      handle_INT(cpu, operandA);
       break;
     case IRET:
-      // Return from an interrupt handler.
       handle_IRET(cpu, interrupt_flag);
       break;
     case JEQ:
@@ -450,7 +452,7 @@ void cpu_run(struct cpu *cpu)
       if (cpu->reg[operandB] == 0)
       {
         printf("Can not mod by 0\n");
-        running = 0;
+        cpu->running = 0;
       }
       else
       {
