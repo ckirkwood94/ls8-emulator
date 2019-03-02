@@ -63,7 +63,7 @@ unsigned char pop(struct cpu *cpu)
   return value;
 }
 
-void handle_interrupt(struct cpu *cpu, int interrupt_flag)
+void handle_interrupt(struct cpu *cpu)
 {
   // 1. The IM register is bitwise AND-ed with the IS register and the results stored as `maskedInterrupts`.
   unsigned int maskedInterrupts = cpu->reg[IS_REG] & cpu->reg[IM_REG];
@@ -75,7 +75,7 @@ void handle_interrupt(struct cpu *cpu, int interrupt_flag)
     if (maskedInterrupts & check_bit)
     {
       // 1. Change interrupt flag - disabling interrupts until IRET
-      interrupt_flag = 1;
+      cpu->interrupt_fl = 1;
       // 2. Clear bit in the IS register
       cpu->reg[IS_REG] = cpu->reg[IS_REG] ^ check_bit;
       // 3. Push PC on stack
@@ -277,7 +277,7 @@ void handle_INT(struct cpu *cpu, unsigned char operandA)
   // This will set the _n_th bit in the `IS` register to the value in the given register.
   cpu->reg[IS_REG] |= cpu->reg[operandA];
 }
-void handle_IRET(struct cpu *cpu, int interrupt_flag)
+void handle_IRET(struct cpu *cpu)
 {
   for (int i = 6; i >= 0; i--)
   {
@@ -285,7 +285,7 @@ void handle_IRET(struct cpu *cpu, int interrupt_flag)
   }
   // cpu->FL = pop(cpu);
   cpu->PC = pop(cpu);
-  interrupt_flag = 0;
+  cpu->interrupt_fl = 0;
 }
 void handle_JEQ(struct cpu *cpu, unsigned char operandA)
 { // If `equal` flag is set (true), jump to the address stored in the given register.
@@ -347,6 +347,7 @@ void handle_JLT(struct cpu *cpu, unsigned char operandA)
     cpu->PC += 2;
   }
 }
+void handle_JMP() {}
 
 //////////////////////////
 // Handle IR Funcs End
@@ -363,7 +364,7 @@ void cpu_run(struct cpu *cpu)
   struct timeval tv;
   gettimeofday(&tv, NULL);
   unsigned int prev_sec = tv.tv_sec;
-  int interrupt_flag = 0;
+  cpu->interrupt_fl = 0;
 
   while (cpu->running)
   {
@@ -418,7 +419,7 @@ void cpu_run(struct cpu *cpu)
       handle_INT(cpu, operandA);
       break;
     case IRET:
-      handle_IRET(cpu, interrupt_flag);
+      handle_IRET(cpu);
       break;
     case JEQ:
       handle_JEQ(cpu, operandA);
@@ -541,9 +542,9 @@ void cpu_run(struct cpu *cpu)
       cpu->PC += num_operands + 1;
     }
     // 7. Check for interrupt and check if not already handling an interrupt
-    if ((cpu->reg[IS_REG] != 0) && interrupt_flag == 0)
+    if ((cpu->reg[IS_REG] != 0) && cpu->interrupt_fl == 0)
     {
-      handle_interrupt(cpu, interrupt_flag);
+      handle_interrupt(cpu);
     }
   }
 }

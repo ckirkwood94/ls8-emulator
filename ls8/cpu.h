@@ -15,6 +15,9 @@ struct cpu
   // CPU running flag
   // TODO: move onto flags register
   int running;
+  // Interrupt FL
+  // TODO: move onto flags register
+  int interrupt_fl;
 };
 
 // ALU operations
