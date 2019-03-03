@@ -15,6 +15,8 @@
 #define GREATER_FL 0b00000010
 #define EQUAL_FL 0b00000001
 #define RUNNING_FL 0b10000000
+#define INTERRUPT_FL 0b01000000
+
 #define UNUSED(param) (void)(param)
 // Initilize int to keep track of length of program in RAM
 // Used to trigger stack overflow warning
@@ -76,13 +78,13 @@ void handle_interrupt(struct cpu *cpu)
     if (maskedInterrupts & check_bit)
     {
       // 1. Change interrupt flag - disabling interrupts until IRET
-      cpu->interrupt_fl = 1;
+      cpu->FL |= INTERRUPT_FL;
       // 2. Clear bit in the IS register
-      cpu->reg[IS_REG] = cpu->reg[IS_REG] ^ check_bit;
+      cpu->reg[IS_REG] ^= check_bit;
       // 3. Push PC on stack
       push(cpu, cpu->PC);
       // 4. Push FL register
-      // push(cpu, cpu->FL);
+      push(cpu, cpu->FL);
       // 5. Push registers 0-6 in order
       for (int j = 0; j < 7; j++)
       {
@@ -295,9 +297,9 @@ void handle_IRET(struct cpu *cpu, unsigned char operandA, unsigned char operandB
   {
     cpu->reg[i] = pop(cpu);
   }
-  // cpu->FL = pop(cpu);
+  cpu->FL = pop(cpu);
   cpu->PC = pop(cpu);
-  cpu->interrupt_fl = 0;
+  cpu->FL ^= INTERRUPT_FL;
 }
 void handle_JEQ(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 {
@@ -489,27 +491,23 @@ void handle_XOR(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 //////////////////////////
 
 /**
- * CU - Control Unit
- */
-
-/**
  * Run the CPU
  */
 void cpu_run(struct cpu *cpu)
 {
   cpu->FL |= RUNNING_FL; // True until we get a HLT instruction
   unsigned char operandA, operandB, instruction;
+  unsigned int num_operands, prev_sec;
   struct timeval tv;
   gettimeofday(&tv, NULL);
-  unsigned int prev_sec = tv.tv_sec;
-  cpu->interrupt_fl = 0;
+  prev_sec = tv.tv_sec;
 
   while (cpu->FL & RUNNING_FL)
   {
     // 1. Get the value of the current instruction (in address PC). Store in Instruction Register or IR
     instruction = cpu_ram_read(cpu, cpu->PC);
     // 2. Determine how many operands this next instruction requires from bits 6-7 of instruction opcode
-    unsigned int num_operands = instruction >> 6;
+    num_operands = instruction >> 6;
     // 3. Get the appropriate value(s) of the operands following this instruction
     operandA = cpu_ram_read(cpu, cpu->PC + 1);
     operandB = cpu_ram_read(cpu, cpu->PC + 2);
@@ -577,7 +575,7 @@ void cpu_run(struct cpu *cpu)
       cpu->PC += num_operands + 1;
     }
     // 7. Check for interrupt and check if not already handling an interrupt
-    if ((cpu->reg[IS_REG] != 0) && cpu->interrupt_fl == 0)
+    if ((cpu->reg[IS_REG] != 0) && (cpu->FL & INTERRUPT_FL) == 0)
     {
       handle_interrupt(cpu);
     }

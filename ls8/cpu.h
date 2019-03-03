@@ -10,7 +10,7 @@ struct cpu
   unsigned char reg[8];
   // ram (array)
   unsigned char ram[256];
-  // Flags: (Running, 0, 0, 0, 0, Less-than, Greater-than, Equal)
+  // Flags: (Running, Interrupt, 0, 0, 0, Less-than, Greater-than, Equal)
   unsigned char FL;
   // Interrupt FL
   // TODO: move onto flags register
