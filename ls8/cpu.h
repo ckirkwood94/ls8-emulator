@@ -12,9 +12,6 @@ struct cpu
   unsigned char ram[256];
   // Flags: (Running, Interrupt, 0, 0, 0, Less-than, Greater-than, Equal)
   unsigned char FL;
-  // Interrupt FL
-  // TODO: move onto flags register
-  int interrupt_fl;
 };
 
 // ALU operations
