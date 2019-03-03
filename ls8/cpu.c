@@ -371,52 +371,77 @@ void handle_LD(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
   cpu->reg[operandA] = cpu_ram_read(cpu, cpu->reg[operandB]);
 }
 void handle_LDI(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+{ // Set the value of a register to an integer.
+  cpu->reg[operandA] = operandB;
 }
 void handle_MOD(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+{ // *This is an instruction handled by the ALU.*
+  // If the value in the second register is 0, the system should print an error message and halt.
+  if (cpu->reg[operandB] == 0)
+  {
+    printf("Can not mod by 0\n");
+    cpu->running = 0;
+  }
+  else
+  {
+    alu(cpu, ALU_MOD, operandA, operandB);
+  }
 }
 void handle_MUL(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+{ // *This is an instruction handled by the ALU.*
+  alu(cpu, ALU_MUL, operandA, operandB);
 }
-void handle_NOP(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+void handle_NOP()
+{ // No operation. Do nothing for this instruction.
 }
 void handle_NOT(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+{ // *This is an instruction handled by the ALU.*
+  alu(cpu, ALU_NOT, operandA, operandB);
 }
 void handle_OR(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+{ // *This is an instruction handled by the ALU.*
+  alu(cpu, ALU_OR, operandA, operandB);
 }
-void handle_POP(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+void handle_POP(struct cpu *cpu, unsigned char operandA)
+{ // Pop the value at the top of the stack into the given register.
+  cpu->reg[operandA] = pop(cpu);
 }
-void handle_PRA(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+void handle_PRA(struct cpu *cpu, unsigned char operandA)
+{ // Print alpha character value stored in the given register.
+  printf("%c\n", cpu->reg[operandA]);
 }
-void handle_PRN(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+void handle_PRN(struct cpu *cpu, unsigned char operandA)
+{ // Print numeric value stored in the given register.
+  printf("%d\n", cpu->reg[operandA]);
 }
-void handle_PUSH(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+void handle_PUSH(struct cpu *cpu, unsigned char operandA)
+{ // Push the value in the given register on the stack.
+  push(cpu, cpu->reg[operandA]);
 }
-void handle_RET(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+void handle_RET(struct cpu *cpu)
+{ // Return from subroutine.
+  // Pop the value from the top of the stack and store it in the `PC`.
+  cpu->PC = pop(cpu);
 }
 void handle_SHL(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+{ // *This is an instruction handled by the ALU.*
+  alu(cpu, ALU_SHL, operandA, operandB);
 }
 void handle_SHR(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+{ // *This is an instruction handled by the ALU.*
+  alu(cpu, ALU_SHR, operandA, operandB);
 }
 void handle_ST(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+{ // Store value in registerB in the address stored in registerA.
+  cpu_ram_write(cpu, cpu->reg[operandA], cpu->reg[operandB]);
 }
 void handle_SUB(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+{ // *This is an instruction handled by the ALU.*
+  alu(cpu, ALU_SUB, operandA, operandB);
 }
 void handle_XOR(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
-{
+{ // *This is an instruction handled by the ALU.*
+  alu(cpu, ALU_XOR, operandA, operandB);
 }
 
 //////////////////////////
@@ -516,77 +541,52 @@ void cpu_run(struct cpu *cpu)
       handle_LD(cpu, operandA, operandB);
       break;
     case LDI:
-      // Set the value of a register to an integer.
-      cpu->reg[operandA] = operandB;
+      handle_LDI(cpu, operandA, operandB);
       break;
     case MOD:
-      // *This is an instruction handled by the ALU.*
-      // If the value in the second register is 0, the system should print an error message and halt.
-      if (cpu->reg[operandB] == 0)
-      {
-        printf("Can not mod by 0\n");
-        cpu->running = 0;
-      }
-      else
-      {
-        alu(cpu, ALU_MOD, operandA, operandB);
-      }
+      handle_MOD(cpu, operandA, operandB);
       break;
     case MUL:
-      // *This is an instruction handled by the ALU.*
-      alu(cpu, ALU_MUL, operandA, operandB);
+      handle_MUL(cpu, operandA, operandB);
       break;
     case NOP:
-      // No operation. Do nothing for this instruction.
+      handle_NOP();
       break;
     case NOT:
-      // *This is an instruction handled by the ALU.*
-      alu(cpu, ALU_NOT, operandA, operandB);
+      handle_NOT(cpu, operandA, operandB);
       break;
     case OR:
-      // *This is an instruction handled by the ALU.*
-      alu(cpu, ALU_OR, operandA, operandB);
+      handle_OR(cpu, operandA, operandB);
       break;
     case POP:
-      // Pop the value at the top of the stack into the given register.
-      cpu->reg[operandA] = pop(cpu);
+      handle_POP(cpu, operandA);
       break;
     case PRA:
-      // Print alpha character value stored in the given register.
-      printf("%c\n", cpu->reg[operandA]);
+      handle_PRA(cpu, operandA);
       break;
     case PRN:
-      // Print numeric value stored in the given register.
-      printf("%d\n", cpu->reg[operandA]);
+      handle_PRN(cpu, operandA);
       break;
     case PUSH:
-      // Push the value in the given register on the stack.
-      push(cpu, cpu->reg[operandA]);
+      handle_PUSH(cpu, operandA);
       break;
     case RET:
-      // Return from subroutine.
-      // Pop the value from the top of the stack and store it in the `PC`.
-      cpu->PC = pop(cpu);
+      handle_RET(cpu);
       break;
     case SHL:
-      // *This is an instruction handled by the ALU.*
-      alu(cpu, ALU_SHL, operandA, operandB);
+      handle_SHL(cpu, operandA, operandB);
       break;
     case SHR:
-      // *This is an instruction handled by the ALU.*
-      alu(cpu, ALU_SHR, operandA, operandB);
+      handle_SHR(cpu, operandA, operandB);
       break;
     case ST:
-      // Store value in registerB in the address stored in registerA.
-      cpu_ram_write(cpu, cpu->reg[operandA], cpu->reg[operandB]);
+      handle_ST(cpu, operandA, operandB);
       break;
     case SUB:
-      // *This is an instruction handled by the ALU.*
-      alu(cpu, ALU_SUB, operandA, operandB);
+      handle_SUB(cpu, operandA, operandB);
       break;
     case XOR:
-      // *This is an instruction handled by the ALU.*
-      alu(cpu, ALU_XOR, operandA, operandB);
+      handle_XOR(cpu, operandA, operandB);
       break;
     default:
       printf("unexpected instruction 0x%02X at 0x%02X\n", instruction, cpu->PC);
