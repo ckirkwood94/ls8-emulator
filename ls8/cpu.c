@@ -14,7 +14,7 @@
 #define LESS 0b00000100
 #define GREATER 0b00000010
 #define EQUAL 0b00000001
-
+#define UNUSED(param) (void)(param)
 // Initilize int to keep track of length of program in RAM
 // Used to trigger stack overflow warning
 unsigned int loaded_ram_address = 0;
@@ -239,8 +239,10 @@ void handle_AND(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 { // *This is an instruction handled by the ALU.*
   alu(cpu, ALU_AND, operandA, operandB);
 }
-void handle_CALL(struct cpu *cpu, unsigned char operandA)
-{ // Calls a subroutine (function) at the address stored in the register.
+void handle_CALL(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // Calls a subroutine (function) at the address stored in the register.
   // 1. Store address of next instruction after CALL on stack
   push(cpu, (cpu->PC + 2));
   // 2. PC is set to address stored in given register
@@ -267,18 +269,27 @@ void handle_DIV(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
     alu(cpu, ALU_DIV, operandA, operandB);
   }
 }
-void handle_HLT(struct cpu *cpu) { cpu->running = 0; }
+void handle_HLT(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandA);
+  UNUSED(operandB);
+  cpu->running = 0;
+}
 void handle_INC(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 { // *This is an instruction handled by the ALU.*
   alu(cpu, ALU_INC, operandA, operandB);
 }
-void handle_INT(struct cpu *cpu, unsigned char operandA)
-{ // Issue the interrupt number stored in the given register.
+void handle_INT(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // Issue the interrupt number stored in the given register.
   // This will set the _n_th bit in the `IS` register to the value in the given register.
   cpu->reg[IS_REG] |= cpu->reg[operandA];
 }
-void handle_IRET(struct cpu *cpu)
+void handle_IRET(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 {
+  UNUSED(operandA);
+  UNUSED(operandB);
   for (int i = 6; i >= 0; i--)
   {
     cpu->reg[i] = pop(cpu);
@@ -287,8 +298,10 @@ void handle_IRET(struct cpu *cpu)
   cpu->PC = pop(cpu);
   cpu->interrupt_fl = 0;
 }
-void handle_JEQ(struct cpu *cpu, unsigned char operandA)
-{ // If `equal` flag is set (true), jump to the address stored in the given register.
+void handle_JEQ(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // If `equal` flag is set (true), jump to the address stored in the given register.
   if (cpu->FL & EQUAL)
   {
     cpu->PC = cpu->reg[operandA];
@@ -299,8 +312,10 @@ void handle_JEQ(struct cpu *cpu, unsigned char operandA)
     cpu->PC += 2;
   }
 }
-void handle_JGE(struct cpu *cpu, unsigned char operandA)
-{ // If `greater-than` flag or `equal` flag is set (true), jump to the address stored in the given register.
+void handle_JGE(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // If `greater-than` flag or `equal` flag is set (true), jump to the address stored in the given register.
   if (cpu->FL & (GREATER | EQUAL))
   {
     cpu->PC = cpu->reg[operandA];
@@ -311,8 +326,10 @@ void handle_JGE(struct cpu *cpu, unsigned char operandA)
     cpu->PC += 2;
   }
 }
-void handle_JGT(struct cpu *cpu, unsigned char operandA)
-{ // If `greater-than` flag is set (true), jump to the address stored in the given register.
+void handle_JGT(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // If `greater-than` flag is set (true), jump to the address stored in the given register.
   if (cpu->FL & GREATER)
   {
     cpu->PC = cpu->reg[operandA];
@@ -323,8 +340,10 @@ void handle_JGT(struct cpu *cpu, unsigned char operandA)
     cpu->PC += 2;
   }
 }
-void handle_JLE(struct cpu *cpu, unsigned char operandA)
-{ // If `less-than` flag or `equal` flag is set (true), jump to the address stored in the given register.
+void handle_JLE(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // If `less-than` flag or `equal` flag is set (true), jump to the address stored in the given register.
   if (cpu->FL & (LESS | EQUAL))
   {
     cpu->PC = cpu->reg[operandA];
@@ -335,8 +354,10 @@ void handle_JLE(struct cpu *cpu, unsigned char operandA)
     cpu->PC += 2;
   }
 }
-void handle_JLT(struct cpu *cpu, unsigned char operandA)
-{ // If `less-than` flag is set (true), jump to the address stored in the given register.
+void handle_JLT(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // If `less-than` flag is set (true), jump to the address stored in the given register.
   if (cpu->FL & LESS)
   {
     cpu->PC = cpu->reg[operandA];
@@ -347,13 +368,17 @@ void handle_JLT(struct cpu *cpu, unsigned char operandA)
     cpu->PC += 2;
   }
 }
-void handle_JMP(struct cpu *cpu, unsigned char operandA)
-{ // Jump to the address stored in the given register.
+void handle_JMP(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // Jump to the address stored in the given register.
   // Set the `PC` to the address stored in the given register.
   cpu->PC = cpu->reg[operandA];
 }
-void handle_JNE(struct cpu *cpu, unsigned char operandA)
-{ // If `E` flag is clear (false, 0), jump to the address stored in the given register.
+void handle_JNE(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // If `E` flag is clear (false, 0), jump to the address stored in the given register.
   // Bitwise & last bit. If not set then jump.
   if ((cpu->FL & EQUAL) == 0)
   {
@@ -391,8 +416,11 @@ void handle_MUL(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 { // *This is an instruction handled by the ALU.*
   alu(cpu, ALU_MUL, operandA, operandB);
 }
-void handle_NOP()
+void handle_NOP(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 { // No operation. Do nothing for this instruction.
+  UNUSED(cpu);
+  UNUSED(operandA);
+  UNUSED(operandB);
 }
 void handle_NOT(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 { // *This is an instruction handled by the ALU.*
@@ -402,24 +430,35 @@ void handle_OR(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 { // *This is an instruction handled by the ALU.*
   alu(cpu, ALU_OR, operandA, operandB);
 }
-void handle_POP(struct cpu *cpu, unsigned char operandA)
-{ // Pop the value at the top of the stack into the given register.
+void handle_POP(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // Pop the value at the top of the stack into the given register.
   cpu->reg[operandA] = pop(cpu);
 }
-void handle_PRA(struct cpu *cpu, unsigned char operandA)
-{ // Print alpha character value stored in the given register.
+void handle_PRA(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // Print alpha character value stored in the given register.
   printf("%c\n", cpu->reg[operandA]);
 }
-void handle_PRN(struct cpu *cpu, unsigned char operandA)
-{ // Print numeric value stored in the given register.
+void handle_PRN(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // Print numeric value stored in the given register.
   printf("%d\n", cpu->reg[operandA]);
 }
-void handle_PUSH(struct cpu *cpu, unsigned char operandA)
-{ // Push the value in the given register on the stack.
+void handle_PUSH(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandB);
+  // Push the value in the given register on the stack.
   push(cpu, cpu->reg[operandA]);
 }
-void handle_RET(struct cpu *cpu)
-{ // Return from subroutine.
+void handle_RET(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
+{
+  UNUSED(operandA);
+  UNUSED(operandB);
+  // Return from subroutine.
   // Pop the value from the top of the stack and store it in the `PC`.
   cpu->PC = pop(cpu);
 }
@@ -484,113 +523,48 @@ void cpu_run(struct cpu *cpu)
 
     // 4. switch() over it to decide on a course of action.
     // 5. Do whatever the instruction should do according to the spec.
-    switch (instruction)
+    void (*branch_table[255])(struct cpu *, unsigned char, unsigned char) = {0};
+    branch_table[ADD] = handle_ADD;
+    branch_table[AND] = handle_AND;
+    branch_table[CALL] = handle_CALL;
+    branch_table[CMP] = handle_CMP;
+    branch_table[DEC] = handle_DEC;
+    branch_table[DIV] = handle_DIV;
+    branch_table[HLT] = handle_HLT;
+    branch_table[INC] = handle_INC;
+    branch_table[INT] = handle_INT;
+    branch_table[IRET] = handle_IRET;
+    branch_table[JEQ] = handle_JEQ;
+    branch_table[JGE] = handle_JGE;
+    branch_table[JGT] = handle_JGT;
+    branch_table[JLE] = handle_JLE;
+    branch_table[JLT] = handle_JLT;
+    branch_table[JMP] = handle_JMP;
+    branch_table[JNE] = handle_JNE;
+    branch_table[LDI] = handle_LDI;
+    branch_table[MOD] = handle_MOD;
+    branch_table[MUL] = handle_MUL;
+    branch_table[NOP] = handle_NOP;
+    branch_table[NOT] = handle_NOT;
+    branch_table[OR] = handle_OR;
+    branch_table[POP] = handle_POP;
+    branch_table[PRA] = handle_PRA;
+    branch_table[PRN] = handle_PRN;
+    branch_table[PUSH] = handle_PUSH;
+    branch_table[RET] = handle_RET;
+    branch_table[SHL] = handle_SHL;
+    branch_table[SHR] = handle_SHR;
+    branch_table[ST] = handle_ST;
+    branch_table[SUB] = handle_SUB;
+    branch_table[XOR] = handle_XOR;
+    if (branch_table[instruction] == NULL)
     {
-    case ADD:
-      handle_ADD(cpu, operandA, operandB);
-      break;
-    case AND:
-      handle_AND(cpu, operandA, operandB);
-      break;
-    case CALL:
-      handle_CALL(cpu, operandA);
-      break;
-    case CMP:
-      handle_CMP(cpu, operandA, operandB);
-      break;
-    case DEC:
-      handle_DEC(cpu, operandA, operandB);
-      break;
-    case DIV:
-      handle_DIV(cpu, operandA, operandB);
-      break;
-    case HLT:
-      handle_HLT(cpu);
-      break;
-    case INC:
-      handle_INC(cpu, operandA, operandB);
-      break;
-    case INT:
-      handle_INT(cpu, operandA);
-      break;
-    case IRET:
-      handle_IRET(cpu);
-      break;
-    case JEQ:
-      handle_JEQ(cpu, operandA);
-      break;
-    case JGE:
-      handle_JGE(cpu, operandA);
-      break;
-    case JGT:
-      handle_JGT(cpu, operandA);
-      break;
-    case JLE:
-      handle_JLE(cpu, operandA);
-      break;
-    case JLT:
-      handle_JLT(cpu, operandA);
-      break;
-    case JMP:
-      handle_JMP(cpu, operandA);
-      break;
-    case JNE:
-      handle_JNE(cpu, operandA);
-      break;
-    case LD:
-      handle_LD(cpu, operandA, operandB);
-      break;
-    case LDI:
-      handle_LDI(cpu, operandA, operandB);
-      break;
-    case MOD:
-      handle_MOD(cpu, operandA, operandB);
-      break;
-    case MUL:
-      handle_MUL(cpu, operandA, operandB);
-      break;
-    case NOP:
-      handle_NOP();
-      break;
-    case NOT:
-      handle_NOT(cpu, operandA, operandB);
-      break;
-    case OR:
-      handle_OR(cpu, operandA, operandB);
-      break;
-    case POP:
-      handle_POP(cpu, operandA);
-      break;
-    case PRA:
-      handle_PRA(cpu, operandA);
-      break;
-    case PRN:
-      handle_PRN(cpu, operandA);
-      break;
-    case PUSH:
-      handle_PUSH(cpu, operandA);
-      break;
-    case RET:
-      handle_RET(cpu);
-      break;
-    case SHL:
-      handle_SHL(cpu, operandA, operandB);
-      break;
-    case SHR:
-      handle_SHR(cpu, operandA, operandB);
-      break;
-    case ST:
-      handle_ST(cpu, operandA, operandB);
-      break;
-    case SUB:
-      handle_SUB(cpu, operandA, operandB);
-      break;
-    case XOR:
-      handle_XOR(cpu, operandA, operandB);
-      break;
-    default:
       printf("unexpected instruction 0x%02X at 0x%02X\n", instruction, cpu->PC);
       exit(3);
+    }
+    else
+    {
+      branch_table[instruction](cpu, operandA, operandB);
     }
     // 6. Check to see if instruction sets PC. Move the PC to the next instruction if needed.
     int PC_set = instruction >> 4 & 0x01;
