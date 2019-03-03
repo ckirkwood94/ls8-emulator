@@ -11,9 +11,10 @@
 // Define which register handles interrupt mask
 #define IM_REG 5
 // Define which bit is LGE. Helps when comparing Flag register
-#define LESS 0b00000100
-#define GREATER 0b00000010
-#define EQUAL 0b00000001
+#define LESS_FL 0b00000100
+#define GREATER_FL 0b00000010
+#define EQUAL_FL 0b00000001
+#define RUNNING_FL 0b10000000
 #define UNUSED(param) (void)(param)
 // Initilize int to keep track of length of program in RAM
 // Used to trigger stack overflow warning
@@ -161,22 +162,22 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
     break;
   case ALU_CMP:
     // Compare the values in two registers.
-    // Set FL to 0
-    cpu->FL = cpu->FL & 0x00;
+    // Set LGE flags to 0
+    cpu->FL &= 0b11111000;
     // if A less than B set flag L 00000100 = 4
     if (cpu->reg[regA] < cpu->reg[regB])
     {
-      cpu->FL = cpu->FL | LESS;
+      cpu->FL = cpu->FL | LESS_FL;
     }
     // if A greater than B set flag G 00000010 = 2
     else if (cpu->reg[regA] > cpu->reg[regB])
     {
-      cpu->FL = cpu->FL | GREATER;
+      cpu->FL = cpu->FL | GREATER_FL;
     }
     // else if equal set flag E 00000001 = 1
     else
     {
-      cpu->FL = cpu->FL | EQUAL;
+      cpu->FL = cpu->FL | EQUAL_FL;
     }
     break;
   case ALU_DEC:
@@ -262,7 +263,7 @@ void handle_DIV(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
   if (cpu->reg[operandB] == 0)
   {
     printf("Can not divide by 0\n");
-    cpu->running = 0;
+    cpu->FL ^= RUNNING_FL;
   }
   else
   {
@@ -273,7 +274,7 @@ void handle_HLT(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 {
   UNUSED(operandA);
   UNUSED(operandB);
-  cpu->running = 0;
+  cpu->FL ^= RUNNING_FL;
 }
 void handle_INC(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 { // *This is an instruction handled by the ALU.*
@@ -302,7 +303,7 @@ void handle_JEQ(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 {
   UNUSED(operandB);
   // If `equal` flag is set (true), jump to the address stored in the given register.
-  if (cpu->FL & EQUAL)
+  if (cpu->FL & EQUAL_FL)
   {
     cpu->PC = cpu->reg[operandA];
   }
@@ -316,7 +317,7 @@ void handle_JGE(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 {
   UNUSED(operandB);
   // If `greater-than` flag or `equal` flag is set (true), jump to the address stored in the given register.
-  if (cpu->FL & (GREATER | EQUAL))
+  if (cpu->FL & (GREATER_FL | EQUAL_FL))
   {
     cpu->PC = cpu->reg[operandA];
   }
@@ -330,7 +331,7 @@ void handle_JGT(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 {
   UNUSED(operandB);
   // If `greater-than` flag is set (true), jump to the address stored in the given register.
-  if (cpu->FL & GREATER)
+  if (cpu->FL & GREATER_FL)
   {
     cpu->PC = cpu->reg[operandA];
   }
@@ -344,7 +345,7 @@ void handle_JLE(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 {
   UNUSED(operandB);
   // If `less-than` flag or `equal` flag is set (true), jump to the address stored in the given register.
-  if (cpu->FL & (LESS | EQUAL))
+  if (cpu->FL & (LESS_FL | EQUAL_FL))
   {
     cpu->PC = cpu->reg[operandA];
   }
@@ -358,7 +359,7 @@ void handle_JLT(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 {
   UNUSED(operandB);
   // If `less-than` flag is set (true), jump to the address stored in the given register.
-  if (cpu->FL & LESS)
+  if (cpu->FL & LESS_FL)
   {
     cpu->PC = cpu->reg[operandA];
   }
@@ -380,7 +381,7 @@ void handle_JNE(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
   UNUSED(operandB);
   // If `E` flag is clear (false, 0), jump to the address stored in the given register.
   // Bitwise & last bit. If not set then jump.
-  if ((cpu->FL & EQUAL) == 0)
+  if ((cpu->FL & EQUAL_FL) == 0)
   {
     cpu->PC = cpu->reg[operandA];
   }
@@ -405,7 +406,7 @@ void handle_MOD(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
   if (cpu->reg[operandB] == 0)
   {
     printf("Can not mod by 0\n");
-    cpu->running = 0;
+    cpu->FL ^= RUNNING_FL;
   }
   else
   {
@@ -488,22 +489,25 @@ void handle_XOR(struct cpu *cpu, unsigned char operandA, unsigned char operandB)
 //////////////////////////
 
 /**
+ * CU - Control Unit
+ */
+
+/**
  * Run the CPU
  */
 void cpu_run(struct cpu *cpu)
 {
-  cpu->running = 1; // True until we get a HLT instruction
-  unsigned char operandA;
-  unsigned char operandB;
+  cpu->FL |= RUNNING_FL; // True until we get a HLT instruction
+  unsigned char operandA, operandB, instruction;
   struct timeval tv;
   gettimeofday(&tv, NULL);
   unsigned int prev_sec = tv.tv_sec;
   cpu->interrupt_fl = 0;
 
-  while (cpu->running)
+  while (cpu->FL & RUNNING_FL)
   {
     // 1. Get the value of the current instruction (in address PC). Store in Instruction Register or IR
-    unsigned char instruction = cpu_ram_read(cpu, cpu->PC);
+    instruction = cpu_ram_read(cpu, cpu->PC);
     // 2. Determine how many operands this next instruction requires from bits 6-7 of instruction opcode
     unsigned int num_operands = instruction >> 6;
     // 3. Get the appropriate value(s) of the operands following this instruction
@@ -512,7 +516,6 @@ void cpu_run(struct cpu *cpu)
 
     // Check for time interrupt
     gettimeofday(&tv, NULL);
-    // printf("tv: %ld  prev_sec: %u\n", tv.tv_sec, prev_sec);
     if (tv.tv_sec != prev_sec)
     {
       cpu->reg[IS_REG] |= 0x01;
@@ -521,7 +524,7 @@ void cpu_run(struct cpu *cpu)
 
     // printf("TRACE: %02X: %02X   %02X %02X\n", cpu->PC, instruction, operandA, operandB);
 
-    // 4. switch() over it to decide on a course of action.
+    // 4. Use branch table to find function
     // 5. Do whatever the instruction should do according to the spec.
     void (*branch_table[255])(struct cpu *, unsigned char, unsigned char) = {0};
     branch_table[ADD] = handle_ADD;
@@ -557,6 +560,7 @@ void cpu_run(struct cpu *cpu)
     branch_table[ST] = handle_ST;
     branch_table[SUB] = handle_SUB;
     branch_table[XOR] = handle_XOR;
+
     if (branch_table[instruction] == NULL)
     {
       printf("unexpected instruction 0x%02X at 0x%02X\n", instruction, cpu->PC);
