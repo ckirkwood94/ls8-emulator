@@ -150,84 +150,48 @@ void cpu_load(struct cpu *cpu, char *file)
 /**
  * ALU
  */
+void handle_ALU_ADD(struct cpu *cpu, unsigned char regA, unsigned char regB) { cpu->reg[regA] += cpu->reg[regB]; }
+void handle_ALU_AND(struct cpu *cpu, unsigned char regA, unsigned char regB) { cpu->reg[regA] &= cpu->reg[regB]; }
+void handle_ALU_CMP(struct cpu *cpu, unsigned char regA, unsigned char regB)
+{
+  cpu->FL &= 0b11111000;
+  if (cpu->reg[regA] < cpu->reg[regB])
+    cpu->FL |= LESS_FL;
+  else if (cpu->reg[regA] > cpu->reg[regB])
+    cpu->FL |= GREATER_FL;
+  else
+    cpu->FL |= EQUAL_FL;
+}
+void handle_ALU_DEC(struct cpu *cpu, unsigned char regA, unsigned char regB)
+{
+  cpu->reg[regA]--;
+  UNUSED(regB);
+}
+void handle_ALU_DIV(struct cpu *cpu, unsigned char regA, unsigned char regB) { cpu->reg[regA] /= cpu->reg[regB]; }
+void handle_ALU_INC(struct cpu *cpu, unsigned char regA, unsigned char regB)
+{
+  cpu->reg[regA]++;
+  UNUSED(regB);
+}
+void handle_ALU_MOD(struct cpu *cpu, unsigned char regA, unsigned char regB) { cpu->reg[regA] %= cpu->reg[regB]; }
+void handle_ALU_MUL(struct cpu *cpu, unsigned char regA, unsigned char regB) { cpu->reg[regA] *= cpu->reg[regB]; }
+void handle_ALU_NOT(struct cpu *cpu, unsigned char regA, unsigned char regB)
+{
+  cpu->reg[regA] = ~cpu->reg[regA];
+  UNUSED(regB);
+}
+void handle_ALU_OR(struct cpu *cpu, unsigned char regA, unsigned char regB) { cpu->reg[regA] |= cpu->reg[regB]; }
+void handle_ALU_SHL(struct cpu *cpu, unsigned char regA, unsigned char regB) { cpu->reg[regA] <<= cpu->reg[regB]; }
+void handle_ALU_SHR(struct cpu *cpu, unsigned char regA, unsigned char regB) { cpu->reg[regA] >>= cpu->reg[regB]; }
+void handle_ALU_SUB(struct cpu *cpu, unsigned char regA, unsigned char regB) { cpu->reg[regA] -= cpu->reg[regB]; }
+void handle_ALU_XOR(struct cpu *cpu, unsigned char regA, unsigned char regB) { cpu->reg[regA] ^= cpu->reg[regB]; }
+
+void (*alu_branch_table[14])(struct cpu *, unsigned char, unsigned char) = {
+    handle_ALU_ADD, handle_ALU_AND, handle_ALU_CMP, handle_ALU_DEC, handle_ALU_DIV, handle_ALU_INC, handle_ALU_MOD, handle_ALU_MUL, handle_ALU_NOT, handle_ALU_OR, handle_ALU_SHL, handle_ALU_SHR, handle_ALU_SUB, handle_ALU_XOR};
+
 void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB)
 {
-  switch (op)
-  {
-  case ALU_ADD:
-    // Add the value in two registers and store the result in registerA.
-    cpu->reg[regA] += cpu->reg[regB];
-    break;
-  case ALU_AND:
-    //Bitwise-AND the values in registerA and registerB, then store the result in registerA.
-    cpu->reg[regA] = cpu->reg[regA] & cpu->reg[regB];
-    break;
-  case ALU_CMP:
-    // Compare the values in two registers.
-    // Set LGE flags to 0
-    cpu->FL &= 0b11111000;
-    // if A less than B set flag L 00000100 = 4
-    if (cpu->reg[regA] < cpu->reg[regB])
-    {
-      cpu->FL = cpu->FL | LESS_FL;
-    }
-    // if A greater than B set flag G 00000010 = 2
-    else if (cpu->reg[regA] > cpu->reg[regB])
-    {
-      cpu->FL = cpu->FL | GREATER_FL;
-    }
-    // else if equal set flag E 00000001 = 1
-    else
-    {
-      cpu->FL = cpu->FL | EQUAL_FL;
-    }
-    break;
-  case ALU_DEC:
-    // Decrement (subtract 1 from) the value in the given register.
-    cpu->reg[regA]--;
-    break;
-  case ALU_DIV:
-    // Divide the value in the first register by the value in the second, storing the result in registerA.
-    cpu->reg[regA] /= cpu->reg[regB];
-    break;
-  case ALU_INC:
-    // Increment (add 1 to) the value in the given register.
-    cpu->reg[regA]++;
-    break;
-  case ALU_MOD:
-    // Divide the value in the first register by the value in the second, storing the _remainder_ of the result in registerA.
-    cpu->reg[regA] %= cpu->reg[regB];
-    break;
-  case ALU_MUL:
-    // Multiply the values in two registers together and store the result in registerA.
-    cpu->reg[regA] *= cpu->reg[regB];
-    break;
-  case ALU_NOT:
-    // Perform a bitwise-NOT on the value in a register.
-    cpu->reg[regA] = ~cpu->reg[regA];
-    break;
-  case ALU_OR:
-    // Perform a bitwise-OR between the values in registerA and registerB, storing the result in registerA.
-    cpu->reg[regA] |= cpu->reg[regB];
-  case ALU_SHL:
-    // Shift the value in registerA left by the number of bits specified in registerB, filling the low bits with 0.
-    cpu->reg[regA] = cpu->reg[regA] << cpu->reg[regB];
-    break;
-  case ALU_SHR:
-    // Shift the value in registerA right by the number of bits specified in registerB, filling the high bits with 0.
-    cpu->reg[regA] = cpu->reg[regA] >> cpu->reg[regB];
-    break;
-  case ALU_SUB:
-    // Subtract the value in the second register from the first, storing the result in registerA.
-    cpu->reg[regA] -= cpu->reg[regB];
-    break;
-  case ALU_XOR:
-    //Perform a bitwise-XOR between the values in registerA and registerB, storing the result in registerA.
-    cpu->reg[regA] = cpu->reg[regA] ^ cpu->reg[regB];
-    break;
-  default:
-    break;
-  }
+  alu_branch_table[op](cpu, regA, regB);
 }
 
 //////////////////////////
